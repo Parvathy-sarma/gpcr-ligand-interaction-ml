@@ -21,7 +21,9 @@ A second motivation is to connect structural bioinformatics with molecular simul
 ### Data source
 
 The initial GPCRdb dataset contained 2,577 GPCR structure entries. I first selected 436 human aminergic Class A GPCR structures. Because some structures contain more than one ligand, expanding the ligand information produced 488 GPCR–ligand complex entries, where each entry represents one specific ligand associated with one GPCR structure.
+
 Interaction data were then retrieved for these complexes. After excluding complexes without available interaction information and entries with an undefined pharmacological class, the final dataset contained 472 GPCR–ligand complexes.
+
 Each complex was represented numerically as an interaction fingerprint consisting of 225 GPCR generic residue-position features. Each feature records whether an interaction was observed at that position (1) or not (0). The 472 complexes belonged to 35 distinct receptor groups, which were used for grouped cross-validation to reduce information leakage between structurally related receptor entries.
 
 After quality filtering and removal of entries without a defined pharmacological class, the final ML dataset contained:
@@ -29,6 +31,11 @@ After quality filtering and removal of entries without a defined pharmacological
 - **472 GPCR–ligand complexes**
 - **225 GPCR interaction-position features**
 - **35 receptor groups** used for grouped cross-validation
+
+For the binding-mode analysis, the 472 complexes contained:
+
+- **423 orthosteric complexes**
+- **49 allosteric complexes**
 
 ### What types of ligands are present?
 
@@ -44,7 +51,7 @@ The original dataset contains several pharmacological annotations, including:
 - Allosteric agonists
 - A small number of entries with unknown function
 
-For the ML analysis, these annotations were consolidated into four broader classes:
+For the ML analysis, these annotations were consolidated into four broader pharmacological-effect classes:
 
 | Original annotations | ML class |
 |---|---|
@@ -55,13 +62,22 @@ For the ML analysis, these annotations were consolidated into four broader class
 
 The final class distribution was 347 agonist-like, 45 allosteric modulator, 41 inverse agonist, and 39 antagonist complexes.
 
-**Orthosteric vs allosteric ligands**: Orthosteric ligands bind to the receptor's main (orthosteric) binding site, which is usually the site recognised by the receptor's endogenous ligand. Allosteric ligands bind to a different site on the receptor and can modify receptor activity from this alternative location. In this dataset, agonists, partial agonists, antagonists, and inverse agonists are considered orthosteric ligand classes for the functional analysis, while PAMs, Ago-PAMs, NAMs, and allosteric agonists represent allosteric binding modes.
+### Orthosteric vs allosteric ligands
+
+Orthosteric ligands bind to the receptor's main binding site, which is generally the site used by the receptor's endogenous ligand. Allosteric ligands bind at a different site on the receptor and can modify receptor activity from that alternative location.
+
+It is important to distinguish **pharmacological effect** from **binding mode**. For example, an allosteric agonist can produce an agonist-like effect while binding at an allosteric site. Therefore, the project keeps these two concepts separate: pharmacological annotations are used to define the four ML effect classes above, while binding mode is assigned independently from the original ligand annotations.
+
+For the binding-mode analysis:
+
+- **Orthosteric:** agonists, partial agonists, antagonists, and inverse agonists
+- **Allosteric:** PAMs, Ago-PAMs, NAMs, and allosteric agonists
 
 ### How are the interactions represented numerically?
 
 Each ligand–GPCR complex is represented as an **interaction fingerprint**.
 
-GPCRdb provides generic residue positions that allow equivalent receptor positions to be compared across different GPCRs. Examples include positions such as `3.32`, `5.42`, and `6.52`. Interaction features such as 3.32x32 or 7.45 represent standardized GPCR structural positions, where the first number denotes the transmembrane helix and the following number identifies the equivalent residue position within that helix, allowing ligand interactions to be compared consistently across different GPCRs.
+GPCRdb provides generic residue positions that allow equivalent receptor positions to be compared across different GPCRs. Examples include positions such as `3.32`, `5.42`, and `6.52`. Interaction features such as `3.32x32` or `7.45` represent standardized GPCR structural positions, where the first number denotes the transmembrane helix and the following number identifies the equivalent residue position within that helix, allowing ligand interactions to be compared consistently across different GPCRs.
 
 For each GPCR–ligand complex:
 
@@ -84,7 +100,7 @@ The workflow was:
 4. Retrieve protein–ligand interaction data for each structure.
 5. Match interaction records to their corresponding GPCR–ligand complexes.
 6. Convert residue contacts into binary interaction fingerprints using GPCR generic numbering.
-7. Group ligand annotations into broader pharmacological classes.
+7. Group ligand annotations into broader pharmacological-effect classes.
 8. Train an interpretable logistic-regression classifier.
 9. Use **StratifiedGroupKFold** so structures from the same receptor are kept within the same cross-validation group.
 10. Examine which interaction positions contribute to classification and visualise the results.
@@ -107,19 +123,30 @@ A clear pattern is visible: several receptor positions are contacted very freque
 
 The differences between agonist-like, antagonist, and inverse-agonist ligands are much smaller. Many of the same residues are contacted across these classes, indicating that simply knowing whether a residue is contacted may not be enough to determine the functional effect of an orthosteric ligand.
 
-### 3. Can interaction fingerprints predict orthosteric pharmacology?
+### 3. Can interaction fingerprints distinguish binding mode?
 
 ![Orthosteric pharmacology confusion matrix](figures/orthosteric_pharmacology_confusion_matrix.png)
 
-For the first classification task, interaction fingerprints distinguished orthosteric from allosteric ligands very strongly:
+Interaction fingerprints distinguished orthosteric from allosteric ligands very strongly:
 
-- **Balanced accuracy: 0.979 ± 0.035**
-- **Macro F1: 0.951 ± 0.053**
+- **Balanced accuracy: 0.988 ± 0.025**
+- **Macro F1: 0.988 ± 0.025**
 
-However, when only orthosteric ligands were considered and the model was asked to distinguish agonist-like, antagonist, and inverse-agonist pharmacology, performance was much lower:
+This indicates that the structural contact pattern contains strong information about **where a ligand binds** on the receptor.
 
-- **Balanced accuracy: 0.530 ± 0.043**
-- **Macro F1: 0.457 ± 0.068**
+### 4. Can interaction fingerprints distinguish orthosteric pharmacology?
+
+For the orthosteric subset, the model was asked to distinguish agonist-like, antagonist, and inverse-agonist pharmacology.
+
+- **423 orthosteric GPCR–ligand complexes**
+- **343 agonist-like**
+- **39 antagonist**
+- **41 inverse agonist**
+
+Performance was substantially lower:
+
+- **Balanced accuracy: 0.535 ± 0.103**
+- **Macro F1: 0.443 ± 0.093**
 
 The confusion matrix shows that agonist-like ligands are recognised relatively well, whereas antagonist and inverse-agonist ligands are frequently confused with each other.
 

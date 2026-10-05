@@ -291,16 +291,22 @@ for position in position_variability.head(20).index:
     print()
 
 
-# Separate orthosteric-like and allosteric ligands
+# Define binding mode independently from pharmacological class
+
+allosteric_functions = [
+    "PAM",
+    "Ago-PAM",
+    "NAM",
+    "Allosteric agonist"
+]
 
 ml_dataset["binding_mode"] = np.where(
-    ml_dataset["pharmacological_class"] == "Allosteric modulator",
+    ml_dataset["ligand_function"].isin(allosteric_functions),
     "Allosteric",
     "Orthosteric"
 )
 
 print(ml_dataset["binding_mode"].value_counts())
-
 # Orthosteric vs allosteric classification
 
 X = ml_dataset[feature_coloumn].astype(float)
@@ -338,11 +344,11 @@ print(
 )
 
 # Pharmacological classification among orthosteric ligands
-
 orthosteric = ml_dataset[
-    ml_dataset["pharmacological_class"].isin(
+    (ml_dataset["binding_mode"] == "Orthosteric") &
+    (ml_dataset["pharmacological_class"].isin(
         ["Agonist-like", "Antagonist", "Inverse agonist"]
-    )
+    ))
 ].copy()
 
 print("Orthosteric dataset:", orthosteric.shape)
