@@ -20,11 +20,9 @@ A second motivation is to connect structural bioinformatics with molecular simul
 
 ### Data source
 
-The structural data were obtained from **GPCRdb**, a database specialised in GPCR sequence, structure, ligand, and interaction information.
-
-The analysis focused on experimentally determined **human aminergic Class A GPCRs**, because aminergic receptors are an important GPCR family in pharmacology and are particularly relevant to structure-based ligand modelling.
-
-The initial GPCRdb structure dataset contained 2,577 structures. Filtering for human aminergic GPCR structures produced 436 structures and 488 GPCR–ligand complex entries after ligand expansion. Interaction information was then retrieved for these structures.
+The initial GPCRdb dataset contained 2,577 GPCR structure entries. I first selected 436 human aminergic Class A GPCR structures. Because some structures contain more than one ligand, expanding the ligand information produced 488 GPCR–ligand complex entries, where each entry represents one specific ligand associated with one GPCR structure.
+Interaction data were then retrieved for these complexes. After excluding complexes without available interaction information and entries with an undefined pharmacological class, the final dataset contained 472 GPCR–ligand complexes.
+Each complex was represented numerically as an interaction fingerprint consisting of 225 GPCR generic residue-position features. Each feature records whether an interaction was observed at that position (1) or not (0). The 472 complexes belonged to 35 distinct receptor groups, which were used for grouped cross-validation to reduce information leakage between structurally related receptor entries.
 
 After quality filtering and removal of entries without a defined pharmacological class, the final ML dataset contained:
 
@@ -57,11 +55,13 @@ For the ML analysis, these annotations were consolidated into four broader class
 
 The final class distribution was 347 agonist-like, 45 allosteric modulator, 41 inverse agonist, and 39 antagonist complexes.
 
+**Orthosteric vs allosteric ligands**: Orthosteric ligands bind to the receptor's main (orthosteric) binding site, which is usually the site recognised by the receptor's endogenous ligand. Allosteric ligands bind to a different site on the receptor and can modify receptor activity from this alternative location. In this dataset, agonists, partial agonists, antagonists, and inverse agonists are considered orthosteric ligand classes for the functional analysis, while PAMs, Ago-PAMs, NAMs, and allosteric agonists represent allosteric binding modes.
+
 ### How are the interactions represented numerically?
 
 Each ligand–GPCR complex is represented as an **interaction fingerprint**.
 
-GPCRdb provides generic residue positions that allow equivalent receptor positions to be compared across different GPCRs. Examples include positions such as `3.32`, `5.42`, and `6.52`.
+GPCRdb provides generic residue positions that allow equivalent receptor positions to be compared across different GPCRs. Examples include positions such as `3.32`, `5.42`, and `6.52`. Interaction features such as 3.32x32 or 7.45 represent standardized GPCR structural positions, where the first number denotes the transmembrane helix and the following number identifies the equivalent residue position within that helix, allowing ligand interactions to be compared consistently across different GPCRs.
 
 For each GPCR–ligand complex:
 
@@ -70,7 +70,7 @@ For each GPCR–ligand complex:
 
 This converts a structural interaction pattern into a binary numerical representation that can be analysed using machine-learning methods.
 
-Therefore, the input to the model is not simply the ligand name or the receptor name. It is a numerical representation of **which receptor positions are involved in the ligand interaction**.
+Therefore, the model's input is not simply the ligand or receptor name. It is a numerical representation of **which receptor positions are involved in the ligand interaction**.
 
 ## Computational Workflow
 
@@ -95,7 +95,7 @@ The workflow was:
 
 ![GPCR–ligand dataset composition](figures/pharmacological_class_distribution.png)
 
-The dataset is dominated by agonist-like complexes, while antagonist, inverse-agonist, and allosteric-modulator classes are smaller. This class imbalance is important when interpreting the ML results, which is why balanced accuracy and macro F1 were used instead of relying on accuracy alone.
+The dataset is dominated by agonist-like complexes, while antagonist, inverse-agonist, and allosteric-modulator classes are smaller. This class imbalance is important to consider when interpreting the ML results, which is why balanced accuracy and macro F1 were used rather than relying on accuracy alone.
 
 ### 2. Which GPCR positions distinguish the classes?
 
